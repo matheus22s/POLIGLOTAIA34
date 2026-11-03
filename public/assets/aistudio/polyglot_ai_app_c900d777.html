@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot AI - Tradutor & Professor de Idiomas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col transition-colors duration-300 light:bg-slate-50 light:text-slate-800" id="app-body">
+
+    <!-- Header / Navigation -->
+    <header class="border-b border-slate-800 light:border-slate-200 sticky top-0 z-50 bg-slate-950/80 light:bg-white/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="languages" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-none bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Polyglot AI</h1>
+                    <p class="text-xs text-slate-400">Tradução & Tutor Inteligente</p>
+                </div>
+            </div>
+
+            <!-- Tab Switcher, API Key Modal & Theme Toggle -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <nav class="flex bg-slate-900 light:bg-slate-100 p-1 rounded-xl border border-slate-800 light:border-slate-200">
+                    <button id="btn-tab-translate" onclick="switchTab('translate')" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow-sm">
+                        <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Tradutor</span>
+                    </button>
+                    <button id="btn-tab-tutor" onclick="switchTab('tutor')" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-2">
+                        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                        <span>Professor IA</span>
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                    </button>
+                </nav>
+
+                <button onclick="toggleKeyModal()" class="p-2 rounded-xl bg-slate-900 light:bg-slate-100 text-slate-400 hover:text-white light:hover:text-slate-900 border border-slate-800 light:border-slate-200 transition-colors" title="Configurar Chave Gemini API">
+                    <i data-lucide="key" class="w-5 h-5"></i>
+                </button>
+
+                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-900 light:bg-slate-100 text-slate-400 hover:text-white light:hover:text-slate-900 border border-slate-800 light:border-slate-200 transition-colors">
+                    <i data-lucide="sun" id="theme-icon-light" class="w-5 h-5 hidden"></i>
+                    <i data-lucide="moon" id="theme-icon-dark" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification / Toast Container -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- API Key Dialog Modal -->
+    <div id="api-key-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+                    <i data-lucide="key" class="w-5 h-5 text-indigo-400"></i>
+                    Configurar Chave API Gemini
+                </h3>
+                <button onclick="toggleKeyModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Insira sua chave de API do Google Gemini. Ela é salva com segurança apenas no seu navegador.
+            </p>
+            <input type="password" id="custom-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="toggleKeyModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300">Cancelar</button>
+                <button onclick="saveApiKey()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white">Salvar Chave</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col">
+
+        <!-- ================= TRANSLATION MODE ================= -->
+        <section id="view-translate" class="flex-1 flex flex-col space-y-4">
+            
+            <!-- Language Controls Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/60 light:bg-white p-3 rounded-2xl border border-slate-800 light:border-slate-200 shadow-sm">
+                <!-- Source Language -->
+                <div class="flex-1 min-w-[140px]">
+                    <select id="source-lang" onchange="handleTranslationInput()" class="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-200 light:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="auto">🌐 Detectar Idioma Auto</option>
+                    </select>
+                </div>
+
+                <!-- Swap Button -->
+                <button onclick="swapLanguages()" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 text-slate-300 light:text-slate-700 transition-transform active:scale-95 shadow-sm">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5"></i>
+                </button>
+
+                <!-- Target Language -->
+                <div class="flex-1 min-w-[140px]">
+                    <select id="target-lang" onchange="handleTranslationInput()" class="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-200 light:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </select>
+                </div>
+            </div>
+
+            <!-- Translation Dual Panels -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[360px]">
+                
+                <!-- Input Panel -->
+                <div class="flex flex-col bg-slate-900/40 light:bg-white rounded-2xl border border-slate-800 light:border-slate-200 p-4 shadow-sm relative focus-within:border-indigo-500/50 transition-all">
+                    <div class="flex items-center justify-between mb-2 text-xs text-slate-400 font-medium">
+                        <span id="input-char-count">0 / 2000 caracteres</span>
+                        <button onclick="clearInput()" class="hover:text-slate-200 text-slate-400 flex items-center gap-1">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Limpar
+                        </button>
+                    </div>
+                    <textarea id="input-text" placeholder="Digite ou fale aqui para traduzir em tempo real..." class="flex-1 bg-transparent border-0 resize-none text-slate-100 light:text-slate-800 text-base sm:text-lg focus:outline-none placeholder-slate-500" oninput="debounceTranslation()"></textarea>
+                    
+                    <!-- Action Tools Input -->
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800/60 light:border-slate-100">
+                        <div class="flex items-center space-x-2">
+                            <button id="btn-mic" onclick="toggleSpeechRecognition()" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-100 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors relative">
+                                <i data-lucide="mic" class="w-5 h-5"></i>
+                                <span id="mic-pulse" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                            </button>
+                            <button onclick="speakText('input-text', 'source-lang')" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-100 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors">
+                                <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <button onclick="copyToClipboard('input-text')" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-100 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Copiar">
+                            <i data-lucide="copy" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Output Panel -->
+                <div class="flex flex-col bg-slate-900/80 light:bg-slate-100/70 rounded-2xl border border-slate-800 light:border-slate-200 p-4 shadow-sm relative">
+                    <div class="flex items-center justify-between mb-2 text-xs text-slate-400 font-medium">
+                        <span>Tradução</span>
+                        <div id="status-spinner" class="hidden flex items-center space-x-1.5 text-indigo-400">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>
+                            <span>Traduzindo...</span>
+                        </div>
+                    </div>
+                    <div id="output-text" class="flex-1 text-slate-100 light:text-slate-900 text-base sm:text-lg overflow-y-auto whitespace-pre-wrap font-normal">
+                        <span class="text-slate-500 italic text-base">A tradução aparecerá instantaneamente aqui...</span>
+                    </div>
+
+                    <!-- Action Tools Output -->
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-800/60 light:border-slate-200">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="speakText('output-text', 'target-lang')" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-200 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors">
+                                <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="sendToTutorFromTranslation()" class="px-3 py-2 rounded-xl bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> Explicar com Tutor IA
+                            </button>
+                        </div>
+                        <button onclick="copyToClipboard('output-text')" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-200 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors" title="Copiar">
+                            <i data-lucide="copy" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Grammatical & Cultural Insights Card -->
+            <div id="nuance-card" class="hidden bg-indigo-950/30 light:bg-indigo-50 border border-indigo-800/40 light:border-indigo-200 rounded-2xl p-4 text-sm text-slate-300 light:text-slate-700 space-y-2 transition-all">
+                <div class="flex items-center space-x-2 text-indigo-400 light:text-indigo-700 font-semibold text-xs uppercase tracking-wider">
+                    <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                    <span>Notas Gramaticais & Contexto Cultural</span>
+                </div>
+                <p id="nuance-content" class="text-xs sm:text-sm leading-relaxed"></p>
+            </div>
+        </section>
+
+        <!-- ================= AI TUTOR MODE ================= -->
+        <section id="view-tutor" class="hidden flex-1 flex flex-col md:flex-row gap-4 h-[calc(100vh-140px)]">
+            
+            <!-- Left Sidebar: Tutor Controls & Persona Settings -->
+            <div class="w-full md:w-80 flex flex-col gap-4">
+                
+                <!-- Tutor Configuration Card -->
+                <div class="bg-slate-900/60 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl p-4 space-y-4">
+                    <h2 class="font-semibold text-sm flex items-center gap-2 text-indigo-400">
+                        <i data-lucide="sliders" class="w-4 h-4"></i> Configurações da Aula
+                    </h2>
+
+                    <!-- Practice Language -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Idioma de Prática</label>
+                        <select id="tutor-lang" onchange="resetTutorChat()" class="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-200 light:text-slate-800">
+                        </select>
+                    </div>
+
+                    <!-- Target Proficiency Level -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Seu Nível Atual</label>
+                        <select id="tutor-level" onchange="resetTutorChat()" class="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-200 light:text-slate-800">
+                            <option value="Iniciante (A1-A2)">Iniciante (A1-A2)</option>
+                            <option value="Intermediário (B1-B2)" selected>Intermediário (B1-B2)</option>
+                            <option value="Avançado (C1-C2)">Avançado (C1-C2)</option>
+                        </select>
+                    </div>
+
+                    <!-- Teaching Persona -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Estilo do Professor</label>
+                        <select id="tutor-style" class="w-full bg-slate-950 light:bg-slate-50 border border-slate-800 light:border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-200 light:text-slate-800">
+                            <option value="encorajador e amigável">😊 Encorajador e Paciente</option>
+                            <option value="rigoroso com foco total em gramática">✏️ Foco Gramatical Rigoroso</option>
+                            <option value="conversacional e informal (gírias e expressões do dia a dia)">🗣️ Conversação Informal & Gírias</option>
+                            <option value="negócios e profissional">💼 Inglês/Espanhol Corporativo</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Conversation Button -->
+                    <button onclick="resetTutorChat()" class="w-full py-2 px-3 rounded-xl bg-slate-800 light:bg-slate-100 hover:bg-slate-700 light:hover:bg-slate-200 text-xs font-medium text-slate-300 light:text-slate-700 flex items-center justify-center gap-2 transition-colors">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reiniciar Conversa
+                    </button>
+                </div>
+
+                <!-- Vocabulary Saved Cards Section -->
+                <div class="flex-1 bg-slate-900/60 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl p-4 flex flex-col overflow-hidden">
+                    <h3 class="font-semibold text-xs flex items-center justify-between text-slate-400 mb-2">
+                        <span class="flex items-center gap-1.5"><i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-400"></i> Vocabulário Salvo</span>
+                        <span id="vocab-count" class="bg-slate-800 light:bg-slate-100 px-2 py-0.5 rounded-full text-[10px]">0</span>
+                    </h3>
+                    <div id="vocab-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+                        <div class="text-slate-500 text-center py-6 italic">Nenhum vocabulário destacado ainda. Durante a aula, o professor sugerirá termos úteis!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chat Area -->
+            <div class="flex-1 bg-slate-900/40 light:bg-white border border-slate-800 light:border-slate-200 rounded-2xl flex flex-col overflow-hidden shadow-sm">
+                
+                <!-- Chat Top Bar -->
+                <div class="p-3 border-b border-slate-800 light:border-slate-200 bg-slate-950/40 light:bg-slate-50 flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow">
+                            <i data-lucide="bot" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-sm text-slate-200 light:text-slate-800" id="tutor-name-header">Prof. Polyglot</h3>
+                            <div class="flex items-center space-x-1.5 text-[11px] text-emerald-400">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span>Online • Correção em tempo real ativada</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Action Chips -->
+                    <div class="hidden lg:flex items-center space-x-2 text-xs">
+                        <button onclick="quickPrompt('Corrija meu último texto detalhadamente.')" class="px-2.5 py-1 rounded-lg bg-slate-800 light:bg-slate-100 hover:bg-slate-700 text-slate-300 light:text-slate-700 transition-colors">✏️ Corrigir Texto</button>
+                        <button onclick="quickPrompt('Me explique uma regra gramatical importante para este idioma.')" class="px-2.5 py-1 rounded-lg bg-slate-800 light:bg-slate-100 hover:bg-slate-700 text-slate-300 light:text-slate-700 transition-colors">📘 Regra do Dia</button>
+                        <button onclick="quickPrompt('Faça um quiz rápido de 3 perguntas para mim.')" class="px-2.5 py-1 rounded-lg bg-slate-800 light:bg-slate-100 hover:bg-slate-700 text-slate-300 light:text-slate-700 transition-colors">❓ Quiz Rápido</button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Stream -->
+                <div id="tutor-chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm">
+                </div>
+
+                <!-- Chat Input Controls -->
+                <div class="p-3 border-t border-slate-800 light:border-slate-200 bg-slate-950/60 light:bg-slate-50">
+                    <form id="tutor-form" onsubmit="sendTutorMessage(event)" class="flex items-center gap-2">
+                        <button type="button" id="btn-tutor-mic" onclick="toggleTutorMic()" class="p-2.5 rounded-xl bg-slate-800 light:bg-slate-200 text-slate-300 light:text-slate-700 hover:text-indigo-400 hover:bg-slate-700 transition-colors relative">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                            <span id="tutor-mic-pulse" class="hidden absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                        </button>
+                        
+                        <input type="text" id="tutor-input" placeholder="Escreva sua mensagem no idioma de treino..." class="flex-1 bg-slate-900 light:bg-white border border-slate-800 light:border-slate-300 rounded-xl px-4 py-2.5 text-slate-100 light:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                        
+                        <button type="submit" id="btn-tutor-send" class="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md active:scale-95 flex items-center justify-center">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const LANGUAGES = [
+            { code: 'en', name: 'Inglês (English)', flag: '🇺🇸', speechCode: 'en-US' },
+            { code: 'es', name: 'Espanhol (Español)', flag: '🇪🇸', speechCode: 'es-ES' },
+            { code: 'pt', name: 'Português (Brasil)', flag: '🇧🇷', speechCode: 'pt-BR' },
+            { code: 'fr', name: 'Francês (Français)', flag: '🇫🇷', speechCode: 'fr-FR' },
+            { code: 'de', name: 'Alemão (Deutsch)', flag: '🇩🇪', speechCode: 'de-DE' },
+            { code: 'it', name: 'Italiano', flag: '🇮🇹', speechCode: 'it-IT' },
+            { code: 'ja', name: 'Japonês (日本語)', flag: '🇯🇵', speechCode: 'ja-JP' },
+            { code: 'zh', name: 'Mandarim (中文)', flag: '🇨🇳', speechCode: 'zh-CN' },
+            { code: 'ko', name: 'Coreano (한국어)', flag: '🇰🇷', speechCode: 'ko-KR' },
+            { code: 'ru', name: 'Russo (Русский)', flag: '🇷🇺', speechCode: 'ru-RU' },
+            { code: 'ar', name: 'Árabe (العربية)', flag: '🇸🇦', speechCode: 'ar-SA' },
+            { code: 'nl', name: 'Holandês (Nederlands)', flag: '🇳🇱', speechCode: 'nl-NL' },
+            { code: 'pl', name: 'Polonês (Polski)', flag: '🇵🇱', speechCode: 'pl-PL' },
+            { code: 'tr', name: 'Turco (Türkçe)', flag: '🇹🇷', speechCode: 'tr-TR' },
+            { code: 'sv', name: 'Sueco (Svenska)', flag: '🇸🇪', speechCode: 'sv-SE' },
+            { code: 'hi', name: 'Hindi (हिन्दी)', flag: '🇮🇳', speechCode: 'hi-IN' }
+        ];
+
+        let currentTab = 'translate';
+        let debounceTimer = null;
+        let isListeningTranslate = false;
+        let isListeningTutor = false;
+        let recognitionTranslate = null;
+        let recognitionTutor = null;
+        let tutorHistory = [];
+        let savedVocab = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            populateLanguageDropdowns();
+            initSpeechRecognition();
+            lucide.createIcons();
+            
+            document.getElementById('source-lang').value = 'auto';
+            document.getElementById('target-lang').value = 'en';
+            document.getElementById('tutor-lang').value = 'en';
+
+            const savedKey = localStorage.getItem('polyglot_api_key');
+            if (savedKey) {
+                document.getElementById('custom-api-key').value = savedKey;
+            }
+
+            resetTutorChat();
+        });
+
+        function populateLanguageDropdowns() {
+            const sourceSelect = document.getElementById('source-lang');
+            const targetSelect = document.getElementById('target-lang');
+            const tutorSelect = document.getElementById('tutor-lang');
+
+            LANGUAGES.forEach(lang => {
+                sourceSelect.add(new Option(`${lang.flag} ${lang.name}`, lang.code));
+                targetSelect.add(new Option(`${lang.flag} ${lang.name}`, lang.code));
+                tutorSelect.add(new Option(`${lang.flag} ${lang.name}`, lang.code));
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const translateView = document.getElementById('view-translate');
+            const tutorView = document.getElementById('view-tutor');
+            const btnTranslate = document.getElementById('btn-tab-translate');
+            const btnTutor = document.getElementById('btn-tab-tutor');
+
+            if (tab === 'translate') {
+                translateView.classList.remove('hidden');
+                tutorView.classList.add('hidden');
+                btnTranslate.className = "px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow-sm";
+                btnTutor.className = "px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-2";
+            } else {
+                translateView.classList.add('hidden');
+                tutorView.classList.remove('hidden');
+                btnTutor.className = "px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-2 bg-indigo-600 text-white shadow-sm";
+                btnTranslate.className = "px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-400 hover:text-slate-200 transition-all flex items-center space-x-2";
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.getElementById('app-body');
+            const iconLight = document.getElementById('theme-icon-light');
+            const iconDark = document.getElementById('theme-icon-dark');
+
+            if (body.classList.contains('dark')) {
+                body.classList.remove('dark');
+                body.classList.add('light');
+                iconLight.classList.remove('hidden');
+                iconDark.classList.add('hidden');
+            } else {
+                body.classList.remove('light');
+                body.classList.add('dark');
+                iconDark.classList.remove('hidden');
+                iconLight.classList.add('hidden');
+            }
+        }
+
+        function toggleKeyModal() {
+            const modal = document.getElementById('api-key-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('custom-api-key').value.trim();
+            if (key) {
+                localStorage.setItem('polyglot_api_key', key);
+                showToast('Chave de API salva com sucesso!', 'success');
+            } else {
+                localStorage.removeItem('polyglot_api_key');
+                showToast('Chave removida.', 'info');
+            }
+            toggleKeyModal();
+        }
+
+        async function callGeminiAPI(payload, model = 'gemini-2.5-flash', retries = 3, delay = 1000) {
+            const userApiKey = localStorage.getItem('polyglot_api_key') || "";
+            const apiKey = userApiKey.trim();
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                }
+                await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+            }
+            throw new Error('Falha na comunicação com a API do Gemini.');
+        }
+
+        function debounceTranslation() {
+            const inputText = document.getElementById('input-text').value;
+            document.getElementById('input-char-count').innerText = `${inputText.length} / 2000 caracteres`;
+
+            clearTimeout(debounceTimer);
+            if (!inputText.trim()) {
+                document.getElementById('output-text').innerHTML = '<span class="text-slate-500 italic text-base">A tradução aparecerá instantaneamente aqui...</span>';
+                document.getElementById('nuance-card').classList.add('hidden');
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                handleTranslationInput();
+            }, 500);
+        }
+
+        async function handleTranslationInput() {
+            const text = document.getElementById('input-text').value.trim();
+            if (!text) return;
+
+            const sourceLangCode = document.getElementById('source-lang').value;
+            const targetLangCode = document.getElementById('target-lang').value;
+
+            const sourceLangObj = LANGUAGES.find(l => l.code === sourceLangCode);
+            const targetLangObj = LANGUAGES.find(l => l.code === targetLangCode);
+
+            const sourceLangName = sourceLangObj ? sourceLangObj.name : 'Idioma Detectado Automaticamente';
+            const targetLangName = targetLangObj ? targetLangObj.name : 'Inglês';
+
+            document.getElementById('status-spinner').classList.remove('hidden');
+
+            const systemPrompt = `Você é um tradutor profissional de altíssima precisão. 
+Sua tarefa é traduzir o texto fornecido pelo usuário de ${sourceLangName} para ${targetLangName}.
+Retorne uma resposta JSON estritamente no seguinte formato:
+{
+  "translation": "Texto traduzido com precisão e fluência natural",
+  "detectedLanguage": "Nome do idioma original identificado",
+  "culturalNotes": "Uma breve observação (1 a 2 frases curtas) sobre nuances gramaticais, nível de formalidade ou contexto cultural relevante nesta tradução em Português."
+}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            try {
+                const result = await callGeminiAPI(payload);
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (jsonText) {
+                    const parsed = JSON.parse(jsonText);
+                    document.getElementById('output-text').innerText = parsed.translation;
+
+                    if (parsed.culturalNotes) {
+                        document.getElementById('nuance-content').innerText = parsed.culturalNotes;
+                        document.getElementById('nuance-card').classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao realizar tradução. Verifique sua Chave de API.', 'error');
+            } finally {
+                document.getElementById('status-spinner').classList.add('hidden');
+            }
+        }
+
+        function swapLanguages() {
+            const src = document.getElementById('source-lang');
+            const tgt = document.getElementById('target-lang');
+
+            if (src.value === 'auto') {
+                showToast('Selecione um idioma de origem específico para inverter.', 'info');
+                return;
+            }
+
+            const temp = src.value;
+            src.value = tgt.value;
+            tgt.value = temp;
+
+            const outputTxt = document.getElementById('output-text').innerText;
+            if (outputTxt && !outputTxt.includes('A tradução aparecerá')) {
+                document.getElementById('input-text').value = outputTxt;
+                handleTranslationInput();
+            }
+        }
+
+        function sendToTutorFromTranslation() {
+            const text = document.getElementById('input-text').value.trim();
+            const translation = document.getElementById('output-text').innerText.trim();
+
+            if (!text || translation.includes('A tradução aparecerá')) {
+                showToast('Digite uma frase para enviar ao tutor.', 'info');
+                return;
+            }
+
+            switchTab('tutor');
+            const prompt = `Professor, acabei de traduzir a frase abaixo. Pode me explicar os detalhes da estrutura gramatical e do vocabulário usado nela?\n\nOriginal: "${text}"\nTradução: "${translation}"`;
+            
+            document.getElementById('tutor-input').value = prompt;
+            sendTutorMessage();
+        }
+
+        async function resetTutorChat() {
+            const langCode = document.getElementById('tutor-lang').value;
+            const level = document.getElementById('tutor-level').value;
+            const style = document.getElementById('tutor-style').value;
+
+            const langObj = LANGUAGES.find(l => l.code === langCode);
+            const langName = langObj ? langObj.name : 'Inglês';
+
+            tutorHistory = [];
+            const chatBox = document.getElementById('tutor-chat-messages');
+            chatBox.innerHTML = '';
+
+            document.getElementById('tutor-name-header').innerText = `Prof. Polyglot (${langObj ? langObj.flag : ''} ${langName})`;
+
+            const greeting = `Olá! Sou seu professor particular de **${langName}**. 
+Estou ajustado para o nível **${level}** com um estilo **${style}**. 
+Como posso ajudar você hoje? Podemos conversar livremente, tirar dúvidas gramaticais ou treinar um diálogo!`;
+
+            appendChatMessage('model', greeting);
+        }
+
+        async function sendTutorMessage(e) {
+            if (e) e.preventDefault();
+            const inputEl = document.getElementById('tutor-input');
+            const message = inputEl.value.trim();
+            if (!message) return;
+
+            inputEl.value = '';
+            appendChatMessage('user', message);
+
+            const langCode = document.getElementById('tutor-lang').value;
+            const level = document.getElementById('tutor-level').value;
+            const style = document.getElementById('tutor-style').value;
+            const langObj = LANGUAGES.find(l => l.code === langCode);
+            const langName = langObj ? langObj.name : 'Inglês';
+
+            const systemPrompt = `Você é um professor nativo especialista em ensinar o idioma ${langName}.
+O aluno tem nível ${level}. Seu tom deve ser ${style}.
+
+Regras de Interação:
+1. Responda primariamente no idioma que está sendo praticado (${langName}), mas forneça explicações gramaticais ou correções em Português se necessário para clareza.
+2. Se o usuário cometer algum erro de gramática ou grafia no texto fornecido, inclua sempre uma seção **"✏️ Correção Sugerida"** explicando o erro de forma gentil.
+3. Sugira sempre 1 ou 2 novas palavras/expressões avançadas relacionadas no final sob a seção **"💡 Vocabulário Útil: [Palavra] - [Significado]"**.
+4. Mantenha a conversa fluida fazendo uma pergunta de acompanhamento para incentivar o aluno a continuar praticando.`;
+
+            const contents = tutorHistory.map(msg => ({
+                role: msg.role,
+                parts: [{ text: msg.text }]
+            }));
+
+            contents.push({ role: 'user', parts: [{ text: message }] });
+
+            const payload = {
+                contents: contents,
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            const loadingId = appendChatLoading();
+
+            try {
+                const result = await callGeminiAPI(payload);
+                removeChatLoading(loadingId);
+                const replyText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (replyText) {
+                    appendChatMessage('model', replyText);
+                    tutorHistory.push({ role: 'user', text: message });
+                    tutorHistory.push({ role: 'model', text: replyText });
+                    extractVocabCards(replyText);
+                }
+            } catch (err) {
+                removeChatLoading(loadingId);
+                console.error(err);
+                showToast('Erro ao comunicar com o professor IA.', 'error');
+            }
+        }
+
+        function quickPrompt(text) {
+            document.getElementById('tutor-input').value = text;
+            sendTutorMessage();
+        }
+
+        function appendChatMessage(role, text) {
+            const chatBox = document.getElementById('tutor-chat-messages');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const isUser = role === 'user';
+            let formattedText = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+
+            wrapper.innerHTML = `
+                <div class="max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 ${
+                    isUser 
+                        ? 'bg-indigo-600 text-white rounded-br-none shadow-md' 
+                        : 'bg-slate-800/80 light:bg-slate-100 text-slate-100 light:text-slate-800 rounded-bl-none border border-slate-700/50 light:border-slate-200 shadow-sm'
+                }">
+                    <div class="flex items-center justify-between mb-1 text-[11px] opacity-75 border-b border-white/10 pb-1">
+                        <span class="font-semibold">${isUser ? 'Você' : 'Prof. Polyglot'}</span>
+                        ${!isUser ? `<button onclick="speakTutorMessage(this)" class="hover:text-indigo-400 transition-colors p-1" title="Ouvir"><i data-lucide="volume-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                    </div>
+                    <div class="chat-text text-sm leading-relaxed">${formattedText}</div>
+                </div>
+            `;
+
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+        }
+
+        function appendChatLoading() {
+            const chatBox = document.getElementById('tutor-chat-messages');
+            const id = 'loading-' + Date.now();
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = 'flex justify-start';
+
+            wrapper.innerHTML = `
+                <div class="bg-slate-800/80 light:bg-slate-100 rounded-2xl rounded-bl-none p-4 border border-slate-700/50 light:border-slate-200">
+                    <div class="flex items-center space-x-2 text-indigo-400 text-xs">
+                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        <span>O professor está formulando a resposta...</span>
+                    </div>
+                </div>
+            `;
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons();
+            return id;
+        }
+
+        function removeChatLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function extractVocabCards(text) {
+            const vocabRegex = /💡 Vocabulário Útil:\s*\*?([^\n-]+)\*?\s*-\s*([^\n]+)/g;
+            let match;
+            while ((match = vocabRegex.exec(text)) !== null) {
+                const word = match[1].trim();
+                const meaning = match[2].trim();
+                
+                if (!savedVocab.some(v => v.word.toLowerCase() === word.toLowerCase())) {
+                    savedVocab.push({ word, meaning });
+                    renderVocabList();
+                }
+            }
+        }
+
+        function renderVocabList() {
+            const listEl = document.getElementById('vocab-list');
+            const countEl = document.getElementById('vocab-count');
+            countEl.innerText = savedVocab.length;
+
+            if (savedVocab.length === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 text-center py-6 italic">Nenhum vocabulário destacado ainda. Durante a aula, o professor sugerirá termos úteis!</div>';
+                return;
+            }
+
+            listEl.innerHTML = savedVocab.map((item, idx) => `
+                <div class="bg-slate-950/60 light:bg-slate-50 p-2.5 rounded-xl border border-slate-800 light:border-slate-200 flex items-center justify-between group">
+                    <div>
+                        <div class="font-semibold text-indigo-400 text-xs">${item.word}</div>
+                        <div class="text-[11px] text-slate-400">${item.meaning}</div>
+                    </div>
+                    <button onclick="removeVocab(${idx})" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function removeVocab(index) {
+            savedVocab.splice(index, 1);
+            renderVocabList();
+        }
+
+        function speakTutorMessage(btn) {
+            const container = btn.closest('.chat-text');
+            if (container) {
+                const langCode = document.getElementById('tutor-lang').value;
+                speakRawText(container.innerText, langCode);
+            }
+        }
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            recognitionTranslate = new SpeechRecognition();
+            recognitionTranslate.continuous = false;
+            recognitionTranslate.interimResults = true;
+
+            recognitionTranslate.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                document.getElementById('input-text').value = transcript;
+                debounceTranslation();
+            };
+
+            recognitionTranslate.onend = () => {
+                isListeningTranslate = false;
+                document.getElementById('mic-pulse').classList.add('hidden');
+            };
+
+            recognitionTutor = new SpeechRecognition();
+            recognitionTutor.continuous = false;
+            recognitionTutor.interimResults = true;
+
+            recognitionTutor.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                document.getElementById('tutor-input').value = transcript;
+            };
+
+            recognitionTutor.onend = () => {
+                isListeningTutor = false;
+                document.getElementById('tutor-mic-pulse').classList.add('hidden');
+            };
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognitionTranslate) {
+                showToast('Reconhecimento de voz não suportado neste navegador.', 'error');
+                return;
+            }
+
+            if (isListeningTranslate) {
+                recognitionTranslate.stop();
+                isListeningTranslate = false;
+                document.getElementById('mic-pulse').classList.add('hidden');
+            } else {
+                const srcCode = document.getElementById('source-lang').value;
+                const langObj = LANGUAGES.find(l => l.code === srcCode);
+                recognitionTranslate.lang = langObj ? langObj.speechCode : 'pt-BR';
+                recognitionTranslate.start();
+                isListeningTranslate = true;
+                document.getElementById('mic-pulse').classList.remove('hidden');
+                showToast('Fale agora...', 'info');
+            }
+        }
+
+        function toggleTutorMic() {
+            if (!recognitionTutor) {
+                showToast('Reconhecimento de voz não suportado neste navegador.', 'error');
+                return;
+            }
+
+            if (isListeningTutor) {
+                recognitionTutor.stop();
+                isListeningTutor = false;
+                document.getElementById('tutor-mic-pulse').classList.add('hidden');
+            } else {
+                const tutorLangCode = document.getElementById('tutor-lang').value;
+                const langObj = LANGUAGES.find(l => l.code === tutorLangCode);
+                recognitionTutor.lang = langObj ? langObj.speechCode : 'en-US';
+                recognitionTutor.start();
+                isListeningTutor = true;
+                document.getElementById('tutor-mic-pulse').classList.remove('hidden');
+                showToast('Pode falar no idioma de treino...', 'info');
+            }
+        }
+
+        function speakText(elementId, selectId) {
+            const text = elementId === 'output-text' 
+                ? document.getElementById(elementId).innerText 
+                : document.getElementById(elementId).value;
+
+            const langCode = document.getElementById(selectId).value;
+            speakRawText(text, langCode);
+        }
+
+        function speakRawText(text, langCode) {
+            if (!text || text.includes('A tradução aparecerá')) return;
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                const langObj = LANGUAGES.find(l => l.code === langCode);
+                utterance.lang = langObj ? langObj.speechCode : 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                showToast('Síntese de voz não suportada neste navegador.', 'error');
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const text = elementId === 'output-text' 
+                ? document.getElementById(elementId).innerText 
+                : document.getElementById(elementId).value;
+
+            if (!text || text.includes('A tradução aparecerá')) return;
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Texto copiado para a área de transferência!', 'success');
+            }).catch(() => {
+                showToast('Erro ao copiar texto.', 'error');
+            });
+        }
+
+        function clearInput() {
+            document.getElementById('input-text').value = '';
+            document.getElementById('output-text').innerHTML = '<span class="text-slate-500 italic text-base">A tradução aparecerá instantaneamente aqui...</span>';
+            document.getElementById('nuance-card').classList.add('hidden');
+            document.getElementById('input-char-count').innerText = '0 / 2000 caracteres';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800 text-white border-slate-700';
+            if (type === 'error') bgClass = 'bg-red-900/90 text-white border-red-700';
+            if (type === 'success') bgClass = 'bg-emerald-900/90 text-white border-emerald-700';
+
+            toast.className = `px-4 py-2.5 rounded-xl border text-xs font-medium shadow-lg backdrop-blur-md transition-all duration-300 transform translate-y-2 pointer-events-auto flex items-center space-x-2 ${bgClass}`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

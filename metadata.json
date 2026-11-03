@@ -1,0 +1,8 @@
+{
+  "name": "Polyglot AI",
+  "description": "Tradutor inteligente e tutor de conversação e gramática com IA em múltiplos idiomas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
